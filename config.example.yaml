@@ -1,0 +1,60 @@
+# Programming language filter. Leave empty to use the default GitHub Trending page.
+language: ""
+# Trending time window: daily, weekly, or monthly.
+since: daily
+# Number of repositories to include in each run.
+top_n: 10
+
+# Telegram Bot API notification settings.
+telegram:
+  # Enable or disable Telegram delivery.
+  enabled: false
+  # Telegram bot token from BotFather.
+  bot_token: ""
+  # Target chat ID or channel ID.
+  chat_id: ""
+
+# SMTP email notification settings.
+email:
+  # Enable or disable email delivery.
+  enabled: false
+  # SMTP server hostname.
+  smtp_server: ""
+  # SMTP server port.
+  smtp_port: 587
+  # SMTP username or login identity.
+  username: ""
+  # SMTP password or app password.
+  password: ""
+  # Recipient email address.
+  to: ""
+  # Whether to use TLS for the SMTP connection.
+  use_tls: true
+
+# Bark push notification for Apple devices.
+bark:
+  # Enable or disable Bark delivery.
+  enabled: false
+  # Full Bark endpoint URL.
+  url: ""
+
+# DingTalk custom robot webhook settings.
+dingtalk:
+  # Enable or disable DingTalk delivery.
+  enabled: false
+  # Custom robot webhook URL.
+  webhook_url: ""
+
+# Feishu custom bot webhook settings.
+feishu:
+  # Enable or disable Feishu delivery.
+  enabled: false
+  # Custom bot webhook URL.
+  webhook_url: ""
+
+# Generic webhook receiver settings.
+webhook:
+  # Enable or disable generic webhook delivery.
+  enabled: false
+  # Target webhook URL.
+  url: ""
