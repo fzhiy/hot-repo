@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import inspect
 import logging
 import os
 from copy import deepcopy
@@ -146,29 +145,17 @@ def _load_env_config() -> dict[str, Any]:
     }
 
 
-def _invoke_compatible(func: Any, **candidates: Any) -> Any:
-    signature = inspect.signature(func)
-    parameters = signature.parameters
-
-    if any(
-        parameter.kind == inspect.Parameter.VAR_KEYWORD
-        for parameter in parameters.values()
-    ):
-        return func(**candidates)
-
-    accepted = {
-        key: value
-        for key, value in candidates.items()
-        if key in parameters
-    }
-    return func(**accepted)
-
-
-def _notification_title(config: dict[str, Any], generated_at: datetime) -> str:
-    parts = [f"GitHub Trending {generated_at.date().isoformat()}", config["since"]]
-    if config.get("language"):
-        parts.append(str(config["language"]))
-    return " | ".join(parts)
+def _normalize_notify_config(config: dict[str, Any]) -> dict[str, Any]:
+    """Normalize config keys to match notifier.py's expected interface."""
+    normalized = deepcopy(config)
+    email = normalized.get("email", {})
+    if "to" in email and "to_addrs" not in email:
+        to_value = email["to"]
+        email["to_addrs"] = to_value.split(",") if isinstance(to_value, str) else list(to_value)
+    bark = normalized.get("bark", {})
+    if "url" in bark and "bark_url" not in bark:
+        bark["bark_url"] = bark["url"]
+    return normalized
 
 
 def _notifications_enabled(config: dict[str, Any]) -> bool:
@@ -195,53 +182,31 @@ def save_archive(markdown: str, date_str: str) -> Path:
 
 def run(config: dict[str, Any]) -> dict[str, Any]:
     generated_at = datetime.now(timezone.utc)
+    date_str = generated_at.date().isoformat()
+    language = config.get("language", "")
+    since = config.get("since", "daily")
+    top_n = config.get("top_n", 10)
 
-    repositories = _invoke_compatible(
-        fetch_trending,
-        language=config.get("language"),
-        since=config.get("since"),
-        top_n=config.get("top_n"),
-    )
-    markdown = _invoke_compatible(
-        format_markdown,
-        repositories=repositories,
-        repos=repositories,
-        items=repositories,
-        language=config.get("language"),
-        since=config.get("since"),
-        top_n=config.get("top_n"),
-        generated_at=generated_at,
-    )
-    text = _invoke_compatible(
-        format_text,
-        repositories=repositories,
-        repos=repositories,
-        items=repositories,
-        language=config.get("language"),
-        since=config.get("since"),
-        top_n=config.get("top_n"),
-        generated_at=generated_at,
-    )
+    repos = fetch_trending(language=language, since=since, top_n=top_n)
+    markdown = format_markdown(repos, date_str=date_str, language=language)
+    text = format_text(repos, date_str=date_str, language=language)
 
-    archive_path = save_archive(markdown, generated_at.date().isoformat())
+    archive_path = save_archive(markdown, date_str)
     print(text)
 
     if config.get("_notify", True) and _notifications_enabled(config):
-        _invoke_compatible(
-            dispatch,
-            config=config,
-            markdown=markdown,
-            text=text,
-            message=text,
-            body=markdown,
-            title=_notification_title(config, generated_at),
-        )
-        LOGGER.info("Notifications dispatched.")
+        title = f"GitHub Trending Top {len(repos)} - {date_str}"
+        notify_config = _normalize_notify_config(config)
+        errors = dispatch(notify_config, title=title, markdown_body=markdown, text_body=text)
+        if errors:
+            LOGGER.warning("Some notifications failed: %s", errors)
+        else:
+            LOGGER.info("All notifications sent.")
     else:
         LOGGER.info("Notifications skipped.")
 
     return {
-        "repositories": repositories,
+        "repositories": repos,
         "markdown": markdown,
         "text": text,
         "archive_path": archive_path,
