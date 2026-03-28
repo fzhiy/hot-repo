@@ -21,6 +21,28 @@ def test_dispatch_with_all_channels_disabled_returns_no_errors() -> None:
     assert errors == []
 
 
+def test_normalize_notify_config_bridges_keys() -> None:
+    from src.main import _normalize_notify_config
+
+    config = {
+        "email": {"enabled": True, "to": "a@b.com,c@d.com"},
+        "bark": {"enabled": True, "url": "https://bark.example.com/key"},
+    }
+    normalized = _normalize_notify_config(config)
+
+    assert normalized["email"]["to_addrs"] == ["a@b.com", "c@d.com"]
+    assert normalized["bark"]["bark_url"] == "https://bark.example.com/key"
+
+
+def test_normalize_notify_config_filters_empty_to() -> None:
+    from src.main import _normalize_notify_config
+
+    config = {"email": {"enabled": True, "to": ""}}
+    normalized = _normalize_notify_config(config)
+
+    assert normalized["email"]["to_addrs"] == []
+
+
 @patch("src.notifier.requests.post")
 def test_dispatch_with_telegram_enabled(mock_post: MagicMock) -> None:
     mock_response = MagicMock()

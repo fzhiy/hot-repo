@@ -13,7 +13,7 @@ import yaml
 from .notifier import dispatch
 from .scraper import fetch_trending, format_markdown, format_text
 
-LOGGER = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 DEFAULT_CONFIG: dict[str, Any] = {
@@ -151,7 +151,11 @@ def _normalize_notify_config(config: dict[str, Any]) -> dict[str, Any]:
     email = normalized.get("email", {})
     if "to" in email and "to_addrs" not in email:
         to_value = email["to"]
-        email["to_addrs"] = to_value.split(",") if isinstance(to_value, str) else list(to_value)
+        email["to_addrs"] = [
+            addr.strip()
+            for addr in (to_value.split(",") if isinstance(to_value, str) else list(to_value))
+            if addr.strip()
+        ]
     bark = normalized.get("bark", {})
     if "url" in bark and "bark_url" not in bark:
         bark["bark_url"] = bark["url"]
@@ -176,7 +180,7 @@ def save_archive(markdown: str, date_str: str) -> Path:
     archive_dir.mkdir(parents=True, exist_ok=True)
     archive_path = archive_dir / f"{date_str}.md"
     archive_path.write_text(markdown.rstrip() + "\n", encoding="utf-8")
-    LOGGER.info("Archived markdown to %s", archive_path)
+    logger.info("Archived markdown to %s", archive_path)
     return archive_path
 
 
@@ -199,11 +203,11 @@ def run(config: dict[str, Any]) -> dict[str, Any]:
         notify_config = _normalize_notify_config(config)
         errors = dispatch(notify_config, title=title, markdown_body=markdown, text_body=text)
         if errors:
-            LOGGER.warning("Some notifications failed: %s", errors)
+            logger.warning("Some notifications failed: %s", errors)
         else:
-            LOGGER.info("All notifications sent.")
+            logger.info("All notifications sent.")
     else:
-        LOGGER.info("Notifications skipped.")
+        logger.info("Notifications skipped.")
 
     return {
         "repositories": repos,
