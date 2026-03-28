@@ -5,6 +5,8 @@ __pycache__/
 venv/
 config.yaml
 notes/working-memory/*/
+docs/practice-issues-log.md
+docs/skills-ecosystem-analysis.md
 .DS_Store
 Thumbs.db
 *.swp
