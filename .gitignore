@@ -1,1 +1,16 @@
 __pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+config.yaml
+notes/working-memory/*/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+.env
+.env.*
